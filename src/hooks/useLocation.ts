@@ -24,11 +24,11 @@ export const useLocation = () => {
       },
       (err) => {
         console.warn('Geolocation fallback used:', err.message);
-        setError(err.message);
+        // Don't set error — fall back to default location silently so the app still loads
         setLocation(DEFAULT_LOCATION);
         setLoading(false);
       },
-      { timeout: 5000, maximumAge: 1000 * 60 * 15 } // 5s timeout, 15 min cache
+      { timeout: 8000, maximumAge: 1000 * 60 * 15 } // 8s timeout, 15 min cache
     );
   }, []);
 

@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useWeatherData, useAirQualityData } from '../hooks/useWeatherData';
 import { useLocation } from '../hooks/useLocation';
 import { DashboardSkeleton } from '../components/ui/SkeletonLoader';
@@ -9,9 +9,7 @@ import { CalendarPicker } from '../components/ui/CalendarPicker';
 import { ChartEmptyState } from '../components/ui/ChartEmptyState';
 import { 
   getTemperatureChartOption, 
-  getHumidityChartOption, 
   getPrecipitationChartOption, 
-  getWindChartOption, 
   getVisibilityChartOption, 
   getAQIChartOption 
 } from '../utils/chartConfigs';
@@ -57,337 +55,323 @@ export const Dashboard: React.FC = () => {
   // Dynamic variables for past/future dates vs today
   const weatherCode = isToday && current ? current.weather_code : daily?.weather_code?.[0] || 0;
   const currentTemp = isToday && current ? current.temperature_2m : daily?.temperature_2m_max?.[0] || 0;
-  const apparentTemp = isToday && current ? current.apparent_temperature : Math.max(...(hourly?.apparent_temperature?.slice(0, 24) || [0]));
   const humidity = isToday && current ? current.relative_humidity_2m : hourly?.relative_humidity_2m?.[12] || 0;
   const precip = isToday && current ? current.precipitation : daily?.precipitation_sum?.[0] || 0;
   const isRainy = weatherCode > 50;
 
-  const visibilityKm = (hourly?.visibility?.[0] || 0) / 1000;
+
   const uvIndex = hourly?.uv_index?.[0] || 0;
   const aqi = Math.round(aqData.hourly.european_aqi?.[0] || 0);
   const chartTimes = hourly?.time?.slice(0, 48) || [];
   const chartStart = chartTimes[0]?.split('T')[1]?.substring(0, 5) || '--:--';
   const chartEnd = chartTimes[chartTimes.length - 1]?.split('T')[1]?.substring(0, 5) || '--:--';
   const chartRangeLabel = `${chartStart} - ${chartEnd}`;
-  const locationLabel = location
-    ? `${location.latitude.toFixed(2)}°, ${location.longitude.toFixed(2)}°`
-    : 'Location unavailable';
+  
+  const highTemp = Math.round(daily?.temperature_2m_max?.[0] || 0);
+  const lowTemp = Math.round(daily?.temperature_2m_min?.[0] || 0);
+
+  const getAQIString = (aqiCode: number) => {
+    if (aqiCode <= 20) return "OPTIMAL";
+    if (aqiCode <= 40) return "GOOD";
+    if (aqiCode <= 60) return "FAIR";
+    if (aqiCode <= 80) return "POOR";
+    return "HAZARDOUS";
+  };
+  const aqiLabel = getAQIString(aqi);
+
+  const pm25 = aqData.hourly.pm2_5?.[0] || 0;
+  const pm10 = aqData.hourly.pm10?.[0] || 0;
+  const co2 = aqData.hourly.carbon_dioxide?.[0] || 'N/A';
+  const no2 = aqData.hourly.nitrogen_dioxide?.[0] || 0;
+  const so2 = aqData.hourly.sulphur_dioxide?.[0] || 0;
+  const ozone = aqData.hourly.ozone?.[0] || 0;
 
   return (
-    <>
-      <section className="stagger-reveal" style={{ animationDelay: '0ms' }}>
-        <p className="text-[10px] uppercase tracking-widest font-semibold text-on-surface-variant">Live Conditions</p>
-        <h2 className="text-2xl font-black tracking-tight text-on-surface mt-1">Current Climate Snapshot</h2>
-        <p className="text-sm text-on-surface-variant mt-1">Real-time atmospheric state and immediate indicators for your detected location.</p>
-      </section>
+    <div className="relative min-h-screen z-0">
+      {/* Map View Background (Atmospheric Layering) */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none opacity-50">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150vw] h-[150vh] bg-[radial-gradient(circle_at_center,_rgba(101,80,168,0.7)_0%,_transparent_65%)] blur-[100px]"></div>
+        <img alt="Orbital Background" className="absolute top-0 right-0 w-[100vw] h-[100vh] max-w-none object-contain md:object-right grayscale invert contrast-[1.3] mix-blend-overlay opacity-70 transform-gpu" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFXXaMrcffAtsYmExe9LzdO5UNn51X5-unoNqzfYQWR2Fd8s3NJqXZpjDVxGHj3cmJh17Lwq5-y7QvZit7SKSUPexakwcW538AEBDJYQNh5iEN5yI7RGMExgpyBzrqgt3cbtgRStQhTkz4ORnhua20VqBmMufcmD7shx_Rg2TVqV_xI_HBxCGgnVwqn3M1WhQlf1X9k-ySafOtRaQIwMYsN8cwWvmPTklQUZ3Z9XZR9khF1MXjbmAXtU2IeF7Dk_cXpn9vp66b_4-w" />
+      </div>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-8 stagger-reveal" style={{ animationDelay: '40ms' }}>
-        <div className="lg:col-span-2 glass-card card-soft-depth rounded-2xl md:rounded-[1.75rem] p-6 md:p-8 flex flex-col justify-between min-h-[400px] relative overflow-hidden group transition-transform duration-300 hover:scale-[1.01]">
-          <div className="absolute -right-20 -top-20 w-80 h-80 bg-primary/20 rounded-full blur-[100px] group-hover:bg-primary/30 transition-all duration-700"></div>
-          
-          <div className="relative z-10 flex justify-between items-start">
-            <div>
-              <h2 className="text-4xl font-bold tracking-tighter text-on-surface">Current Location</h2>
-              <p className="text-on-surface-variant text-lg capitalize">{getWeatherDescription(weatherCode)}</p>
-              <p className="text-on-surface-variant/80 text-xs mt-1 font-medium">{locationLabel}</p>
-            </div>
-            <div className="flex flex-col items-end gap-2">
-              <span className="px-4 py-1.5 bg-primary/5 text-primary border border-primary/15 rounded-full text-xs font-semibold w-fit">
-                {isToday ? 'LIVE UPDATE' : 'SELECTED DATE'}
-              </span>
-              <div className="w-56 relative z-50">
-                <CalendarPicker
-                  value={selectedDate}
-                  onChange={handleDateChange}
-                  maxDate={new Date()}
-                />
-              </div>
-            </div>
-          </div>
-          
-          <div className="relative z-10 flex items-center gap-12 mt-4">
-            <div className="flex items-baseline">
-              <span className="text-[8rem] font-bold tracking-tighter leading-none text-glow">
-                {formatTemperature(currentTemp, tempUnit).replace('°C', '').replace('°F', '')}
-              </span>
-              <span className="text-4xl font-light text-on-surface-variant block mt-4 ml-2">°{tempUnit}</span>
-            </div>
-            <div className="flex flex-col gap-2">
-              <span className="material-symbols-outlined text-8xl text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>
-                {isRainy ? 'rainy' : 'cloud_queue'}
-              </span>
-              <div className="text-on-surface-variant flex items-center gap-2">
-                <span className="material-symbols-outlined text-sm">thermostat</span>
-                <span className="text-sm font-medium">Feels like {Math.round(apparentTemp)}°</span>
-              </div>
-            </div>
-          </div>
-          
-          <div className="relative z-10 grid grid-cols-4 pt-8 mt-8 border-t border-outline-variant/10 gap-4">
-            <div className="flex flex-col">
-              <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-1">Sunrise</span>
-              <span className="text-on-surface font-semibold text-sm xl:text-base">{daily?.sunrise?.[0]?.split('T')[1] || '--:--'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-1">Sunset</span>
-              <span className="text-on-surface font-semibold text-sm xl:text-base">{daily?.sunset?.[0]?.split('T')[1] || '--:--'}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-1">Humidity</span>
-              <span className="text-on-surface font-semibold text-sm xl:text-base">{Math.round(humidity)}%</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-1">Precipitation</span>
-              <span className="text-on-surface font-semibold text-sm xl:text-base">{precip} mm</span>
-            </div>
-          </div>
+      <div className="max-w-[1600px] mx-auto pb-8">
+        {/* Calendar Picker Floating Above */}
+        <div className="flex justify-end mb-6 stagger-reveal" style={{ animationDelay: '0ms' }}>
+           <div className="w-64">
+             <CalendarPicker
+                value={selectedDate}
+                onChange={handleDateChange}
+                maxDate={new Date()}
+             />
+           </div>
         </div>
 
-        {/* Replaced Radar with Air Quality Details */}
-        <div className="lg:col-span-1 glass-card rounded-xl p-6 flex flex-col min-h-[400px] transition-transform duration-300 hover:scale-[1.01] hover:-translate-y-1">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Air Quality Analysis</h3>
-            <span className={`text-[10px] px-2 py-0.5 rounded font-bold tracking-wider ${aqi > 50 ? 'bg-error-container text-error' : 'bg-primary/20 text-primary-fixed-dim'}`}>
-              AQI: {aqi}
-            </span>
-          </div>
-          <div className="flex-1 flex flex-col justify-between gap-4">
-            {[
-              { label: 'PM10 Density', value: aqData.hourly.pm10[0], unit: 'μg/m³', color: 'text-primary' },
-              { label: 'PM2.5 Density', value: aqData.hourly.pm2_5[0], unit: 'μg/m³', color: 'text-tertiary' },
-              { label: 'Carbon Monoxide', value: aqData.hourly.carbon_monoxide[0], unit: 'μg/m³', color: 'text-secondary' },
-              { label: 'Carbon Dioxide', value: aqData.hourly.carbon_dioxide?.[0] || 'N/A', unit: 'μg/m³', color: 'text-on-surface' },
-              { label: 'Nitrogen Dioxide', value: aqData.hourly.nitrogen_dioxide[0], unit: 'μg/m³', color: 'text-on-surface' },
-              { label: 'Sulphur Dioxide', value: aqData.hourly.sulphur_dioxide[0], unit: 'μg/m³', color: 'text-on-surface' },
-            ].map(item => (
-              <div key={item.label} className="flex items-center justify-between border-b border-outline-variant/10 pb-2">
-                <span className="text-[13px] font-medium text-on-surface-variant hover:text-on-surface transition-colors cursor-default">{item.label}</span>
-                <div className="flex items-baseline gap-1">
-                  <span className={`text-lg font-bold ${item.color}`}>{item.value}</span>
-                  <span className="text-[10px] text-on-surface-variant">{item.unit}</span>
+        {/* Hero Section: Current Weather */}
+        <section className="relative mb-12 grid grid-cols-1 lg:grid-cols-12 gap-8 items-end stagger-reveal" style={{ animationDelay: '40ms' }}>
+          <div className="lg:col-span-8">
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+              <span className="px-3 py-1 rounded-full bg-secondary-container/20 text-secondary text-[10px] font-bold tracking-widest uppercase border border-secondary/30">
+                {isToday ? 'Live Orbital Feed' : 'Historical Data'}
+              </span>
+              <div className="flex items-center gap-2 text-on-surface-variant font-label text-sm">
+                <span className="material-symbols-outlined text-sm">calendar_today</span>
+                <span>{format(selectedDate, 'MMMM d, yyyy')}</span>
+              </div>
+            </div>
+            
+            <div className="flex flex-col md:flex-row md:items-baseline gap-6 mt-4">
+              <h1 className="font-headline text-8xl md:text-[10rem] font-bold tracking-tighter leading-none text-on-surface text-glow">
+                {formatTemperature(currentTemp, tempUnit).replace('°C', '').replace('°F', '')}°
+              </h1>
+              
+              <div className="space-y-4 md:space-y-2 mt-4 md:mt-0">
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-4xl text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    {isRainy ? 'rainy' : 'partly_cloudy_day'}
+                  </span>
+                  <span className="font-headline text-3xl md:text-4xl font-light text-on-surface-variant capitalize">
+                    {getWeatherDescription(weatherCode)}
+                  </span>
+                </div>
+                <div className="flex gap-4 font-label text-lg tracking-tight text-outline">
+                  <span>H: {highTemp}°</span>
+                  <span>L: {lowTemp}°</span>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+          
+          {/* Bento Quick Stats */}
+          <div className="lg:col-span-4 grid grid-cols-2 gap-4 h-full min-h-[160px]">
+            <div className="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col justify-between" style={{ background: 'rgba(53, 52, 59, 0.4)', backdropFilter: 'blur(24px)' }}>
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-outline">Precipitation</span>
+              <div className="mt-4">
+                <span className="text-3xl font-headline font-medium text-tertiary">{precip} <span className="text-sm font-light">mm</span></span>
+                <p className="text-[11px] text-on-surface-variant mt-1">{precip > 0 ? 'Precipitation expected' : 'Dry conditions'}</p>
+              </div>
+            </div>
+            <div className="glass-panel p-6 rounded-xl border border-outline-variant/10 flex flex-col justify-between" style={{ background: 'rgba(53, 52, 59, 0.4)', backdropFilter: 'blur(24px)' }}>
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-outline">UV Index</span>
+              <div className="mt-4">
+                <span className="text-3xl font-headline font-medium text-error">{uvIndex}</span>
+                <p className="text-[11px] text-on-surface-variant mt-1">{uvIndex > 5 ? 'High Exposure' : 'Low Exposure'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-      <section className="space-y-3 stagger-reveal" style={{ animationDelay: '140ms' }}>
-        <div>
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-on-surface-variant">Quick Indicators</p>
-          <p className="text-sm text-on-surface-variant mt-1">Core metrics optimized for at-a-glance scanning.</p>
-        </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {/* Humidity */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-secondary mb-4 block">humidity_mid</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">Humidity</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-on-surface">{Math.round(humidity)}</span>
-            <span className="text-sm text-on-surface-variant">%</span>
+        {/* Detailed Grid */}
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12 stagger-reveal" style={{ animationDelay: '80ms' }}>
+          {/* Humidity */}
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5">
+            <div className="flex items-center justify-between mb-8">
+              <span className="material-symbols-outlined text-primary">humidity_percentage</span>
+              <span className="text-[10px] font-bold tracking-widest text-outline uppercase">Humidity</span>
+            </div>
+            <div className="text-4xl font-headline mb-2">{Math.round(humidity)}%</div>
+            <div className="w-full bg-surface-container-highest h-1 rounded-full overflow-hidden">
+              <div className="bg-primary h-full shadow-[0_0_10px_rgba(208,193,255,0.5)] transition-all duration-1000" style={{ width: `${Math.round(humidity)}%` }}></div>
+            </div>
           </div>
-        </div>
-        
-        {/* Wind Speed Max */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-tertiary mb-4 block">air</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">Max Wind Speed</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-on-surface">{Math.max(...(hourly?.wind_speed_10m?.slice(0, 24) || [0]))}</span>
-            <span className="text-sm text-on-surface-variant">km/h</span>
+          
+          {/* Wind Speed */}
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5">
+            <div className="flex items-center justify-between mb-8">
+              <span className="material-symbols-outlined text-primary">air</span>
+              <span className="text-[10px] font-bold tracking-widest text-outline uppercase">Wind Speed</span>
+            </div>
+            <div className="text-4xl font-headline mb-2">{Math.max(...(hourly?.wind_speed_10m?.slice(0, 24) || [0]))} <span className="text-lg font-light text-outline">km/h</span></div>
+            <p className="text-xs text-on-surface-variant">Max daily kinetic wind</p>
           </div>
-        </div>
+          
+          {/* Sun Cycle */}
+          <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant/5 lg:col-span-2">
+            <div className="flex items-center justify-between mb-8">
+              <span className="material-symbols-outlined text-primary">wb_sunny</span>
+              <span className="text-[10px] font-bold tracking-widest text-outline uppercase">Solar Transit</span>
+            </div>
+            <div className="flex justify-between items-end h-16">
+              <div className="text-center">
+                <p className="text-[10px] text-outline uppercase mb-1">Sunrise</p>
+                <p className="text-xl font-headline">{daily?.sunrise?.[0]?.split('T')[1] || '--:--'}</p>
+              </div>
+              <div className="flex-1 mx-8 relative h-12">
+                <svg className="w-full h-full stroke-primary/30 fill-none overflow-visible" viewBox="0 0 100 50" preserveAspectRatio="none">
+                  <path d="M 0 50 Q 50 -20 100 50" strokeDasharray="2 2" strokeWidth="1"></path>
+                  <circle className="shadow-lg shadow-primary/50" cx="50" cy="15" fill="#d0c1ff" r="4"></circle>
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-outline uppercase mb-1">Sunset</p>
+                <p className="text-xl font-headline">{daily?.sunset?.[0]?.split('T')[1] || '--:--'}</p>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        {/* UV Index */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-primary mb-4 block">light_mode</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">UV Index</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-on-surface">{uvIndex}</span>
-            <span className="text-xs px-2 py-0.5 ml-2 bg-secondary/20 text-secondary-fixed-dim rounded">
-              {uvIndex > 5 ? 'HIGH' : 'MOD'}
-            </span>
+        {/* Air Quality Section (Large Editorial Layout) */}
+        <section className="mb-12 stagger-reveal" style={{ animationDelay: '120ms' }}>
+          <h3 className="font-headline text-2xl font-bold mb-6 flex items-center gap-3">
+            <span className="material-symbols-outlined text-primary">aq</span>
+            Atmospheric Composition
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Major AQI */}
+            <div className="lg:col-span-4 glass-panel p-8 rounded-2xl border border-primary/10 relative overflow-hidden group" style={{ background: 'rgba(53, 52, 59, 0.4)', backdropFilter: 'blur(24px)' }}>
+              <div className="absolute -right-8 -top-8 w-40 h-40 bg-primary/5 rounded-full blur-3xl group-hover:bg-primary/10 transition-colors"></div>
+              <span className="text-[10px] font-bold tracking-[0.3em] uppercase text-outline mb-10 md:mb-12 block">Air Quality Index (AQI)</span>
+              <div className="text-6xl md:text-7xl font-headline font-bold text-on-surface mb-2">{aqi}</div>
+              <div className={`px-3 py-1 text-[10px] font-bold inline-block rounded-full border mb-6 ${aqi > 50 ? 'bg-error-container/20 text-error border-error/20' : 'bg-green-500/10 text-green-400 border-green-500/20'}`}>
+                {aqiLabel}
+              </div>
+              <p className="text-sm text-on-surface-variant leading-relaxed">
+                {aqi > 50 ? 'Atmospheric pollutants are elevated. Considerations for sensitive individuals are recommended in the current orbital sector.' : 'Atmospheric pollutants are within safe parameters. No significant risk to health detected.'}
+              </p>
+            </div>
+            
+            {/* Chemical Breakdown */}
+            <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">PM2.5</p>
+                <div className="text-2xl font-headline">{pm25} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">PM10</p>
+                <div className="text-2xl font-headline">{pm10} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">CO2</p>
+                <div className="text-2xl font-headline">{co2} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">NO2</p>
+                <div className="text-2xl font-headline">{no2} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">SO2</p>
+                <div className="text-2xl font-headline">{so2} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+              <div className="bg-surface-container-high/50 p-6 rounded-xl border border-outline-variant/10">
+                <p className="text-[10px] font-bold text-outline tracking-widest uppercase mb-4">O3</p>
+                <div className="text-2xl font-headline">{ozone} <span className="text-xs text-outline">μg/m³</span></div>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        {/* Precipitation */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-secondary mb-4 block">rainy</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">Precip Probability</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-on-surface">{daily?.precipitation_probability_max?.[0] || 0}</span>
-            <span className="text-sm text-on-surface-variant">%</span>
+        {/* Hourly Visualizations (The "Terminal" Graphs) */}
+        <section className="space-y-8 stagger-reveal pb-64" style={{ animationDelay: '160ms' }}>
+          <div className="flex flex-col md:flex-row items-baseline md:items-center justify-between gap-4 mb-2">
+            <h3 className="font-headline text-2xl font-bold">Orbital Timeline</h3>
+            <div className="flex gap-2 p-1 bg-surface-container-highest rounded-lg border border-outline-variant/20">
+              <button 
+                onClick={() => setTempUnit('C')}
+                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${tempUnit === 'C' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+              >
+                Celsius
+              </button>
+              <button 
+                onClick={() => setTempUnit('F')}
+                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${tempUnit === 'F' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+              >
+                Fahrenheit
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Visibility */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-on-surface-variant mb-4 block">visibility</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">Visibility</p>
-          <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-on-surface">{Math.round(visibilityKm)}</span>
-            <span className="text-sm text-on-surface-variant">km</span>
-          </div>
-        </div>
+          <div className="space-y-6 overflow-x-hidden">
+            {/* Graph 1: Temperature */}
+            <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 overflow-hidden">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <span className="w-1.5 h-6 bg-primary rounded-full"></span>
+                  <span className="text-xs font-bold tracking-[0.2em] uppercase text-on-surface">Thermal Flux (48h)</span>
+                </div>
+                <span className="text-[10px] text-on-surface-variant">Range: {chartRangeLabel}</span>
+              </div>
+              <div className="w-full">
+                {isValidChartData(hourly?.time) && isValidChartData(hourly?.temperature_2m) ? (
+                  <ReactECharts 
+                    option={getTemperatureChartOption(hourly?.time?.slice(0, 48) || [], hourly?.temperature_2m?.slice(0, 48) || [], tempUnit, 'dark')} 
+                    style={{ height: '300px', width: '100%' }} 
+                    opts={{ renderer: 'svg' }}
+                  />
+                ) : (
+                  <ChartEmptyState title="No temperature data available" />
+                )}
+              </div>
+            </div>
 
-        {/* General Overview */}
-        <div className="bg-surface-container card-soft-depth rounded-2xl md:rounded-xl p-5 md:p-6 hover:bg-surface-container-high transition-all duration-300 group hover:scale-[1.03] hover:-translate-y-1">
-          <span className="material-symbols-outlined text-primary mb-4 block">thermostat</span>
-          <p className="font-label uppercase tracking-[0.05em] text-[0.6rem] text-on-surface-variant mb-1 font-medium md:font-bold">Min / Max Temp</p>
-          <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-xl font-bold text-secondary">{Math.round(daily?.temperature_2m_min?.[0] || 0)}°</span>
-            <span className="text-sm text-on-surface-variant mx-1">/</span>
-            <span className="text-xl font-bold text-error">{Math.round(daily?.temperature_2m_max?.[0] || 0)}°</span>
+            {/* Graphs Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Particulate Analysis (Replaces PM10/PM2.5 mockup) */}
+              <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-tertiary rounded-full"></span>
+                    <span className="text-xs font-bold tracking-[0.2em] uppercase text-on-surface">Particulate Analysis</span>
+                  </div>
+                </div>
+                <div className="w-full">
+                  {isValidChartData(aqData?.hourly?.time) && isValidChartData(aqData?.hourly?.pm2_5) && isValidChartData(aqData?.hourly?.pm10) ? (
+                    <ReactECharts 
+                      option={getAQIChartOption(aqData?.hourly?.time?.slice(0, 48) || [], aqData?.hourly?.pm2_5?.slice(0, 48) || [], aqData?.hourly?.pm10?.slice(0, 48) || [], 'dark')} 
+                      style={{ height: '240px', width: '100%' }} 
+                      opts={{ renderer: 'svg' }}
+                    />
+                  ) : (
+                    <ChartEmptyState title="No air quality data available" icon="air" className="min-h-[240px]" />
+                  )}
+                </div>
+              </div>
+
+              {/* Visibility Index */}
+              <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-secondary rounded-full"></span>
+                    <span className="text-xs font-bold tracking-[0.2em] uppercase text-on-surface">Visibility Index</span>
+                  </div>
+                </div>
+                <div className="w-full">
+                  {isValidChartData(hourly?.time) && isValidChartData(hourly?.visibility) ? (
+                    <ReactECharts 
+                      option={getVisibilityChartOption(hourly?.time?.slice(0, 48) || [], (hourly?.visibility?.slice(0, 48) || []).map((v: number) => v / 1000), 'dark')} 
+                      style={{ height: '240px', width: '100%' }} 
+                      opts={{ renderer: 'svg' }}
+                    />
+                  ) : (
+                    <ChartEmptyState title="No visibility data available" icon="visibility" className="min-h-[240px]"/>
+                  )}
+                </div>
+              </div>
+
+              {/* Precipitation */}
+              <div className="bg-surface-container-low rounded-2xl p-6 border border-outline-variant/10 lg:col-span-2">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <span className="w-1.5 h-6 bg-error rounded-full"></span>
+                    <span className="text-xs font-bold tracking-[0.2em] uppercase text-on-surface">Precipitation Outlook</span>
+                  </div>
+                </div>
+                <div className="w-full">
+                   {isValidChartData(hourly?.time) && isValidChartData(hourly?.precipitation) ? (
+                    <ReactECharts 
+                      option={getPrecipitationChartOption(hourly?.time?.slice(0, 48) || [], hourly?.precipitation?.slice(0, 48) || [], 'dark')} 
+                      style={{ height: '240px', width: '100%' }} 
+                      opts={{ renderer: 'svg' }}
+                    />
+                  ) : (
+                    <ChartEmptyState title="No precipitation data available" icon="rainy" className="min-h-[240px]"/>
+                  )}
+                </div>
+              </div>
+
+            </div>
           </div>
-        </div>
+        </section>
       </div>
-      </section>
-
-      {/* Hourly Data Interactive Charts */}
-      <section className="glass-card card-soft-depth rounded-2xl md:rounded-[1.75rem] p-6 md:p-8 mt-4 stagger-reveal" style={{ animationDelay: '240ms' }}>
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-          <div>
-            <h3 className="text-2xl font-bold text-on-surface mb-1">Hourly Data Analytics</h3>
-            <p className="text-on-surface-variant text-sm">Interactive granular datasets (Scroll to zoom/pan horizontally)</p>
-          </div>
-          <div className="flex items-center bg-surface-container-highest p-1 rounded-full card-soft-depth">
-            <button 
-              onClick={() => setTempUnit('C')}
-              className={`px-6 py-1.5 rounded-full text-xs font-bold transition-all border-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${tempUnit === 'C' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              Celsius
-            </button>
-            <button 
-              onClick={() => setTempUnit('F')}
-              className={`px-6 py-1.5 rounded-full text-xs font-bold transition-all border-none active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${tempUnit === 'F' ? 'bg-primary text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
-            >
-              Fahrenheit
-            </button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Temperature Chart */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-            <div className="flex items-start justify-between mb-4">
-              <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Temperature Profile</h4>
-              <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-                <p>Updated: {format(new Date(), 'HH:mm')}</p>
-                <p>Range: {chartRangeLabel}</p>
-              </div>
-            </div>
-            {isValidChartData(hourly?.time) && isValidChartData(hourly?.temperature_2m) ? (
-              <ReactECharts 
-                option={getTemperatureChartOption(hourly?.time?.slice(0, 48) || [], hourly?.temperature_2m?.slice(0, 48) || [], tempUnit, 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No temperature data available" />
-            )}
-          </div>
-
-          {/* Precipitation & Real-time Info */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-            <div className="flex items-start justify-between mb-4">
-              <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Precipitation Outlook</h4>
-              <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-                <p>Updated: {format(new Date(), 'HH:mm')}</p>
-                <p>Range: {chartRangeLabel}</p>
-              </div>
-            </div>
-            {isValidChartData(hourly?.time) && isValidChartData(hourly?.precipitation) ? (
-              <ReactECharts 
-                option={getPrecipitationChartOption(hourly?.time?.slice(0, 48) || [], hourly?.precipitation?.slice(0, 48) || [], 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No precipitation data available" icon="rainy" />
-            )}
-          </div>
-
-          {/* PM10 / PM2.5 Chart */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-            <div className="flex items-start justify-between mb-4">
-              <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">PM10 & PM2.5 Particulates</h4>
-              <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-                <p>Updated: {format(new Date(), 'HH:mm')}</p>
-                <p>Range: {chartRangeLabel}</p>
-              </div>
-            </div>
-            {isValidChartData(aqData?.hourly?.time) && isValidChartData(aqData?.hourly?.pm2_5) && isValidChartData(aqData?.hourly?.pm10) ? (
-              <ReactECharts 
-                option={getAQIChartOption(aqData?.hourly?.time?.slice(0, 48) || [], aqData?.hourly?.pm2_5?.slice(0, 48) || [], aqData?.hourly?.pm10?.slice(0, 48) || [], 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No air quality data available" icon="air" />
-            )}
-          </div>
-
-          {/* Humidity Chart */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-            <div className="flex items-start justify-between mb-4">
-              <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Relative Humidity Variance</h4>
-              <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-                <p>Updated: {format(new Date(), 'HH:mm')}</p>
-                <p>Range: {chartRangeLabel}</p>
-              </div>
-            </div>
-            {isValidChartData(hourly?.time) && isValidChartData(hourly?.relative_humidity_2m) ? (
-              <ReactECharts 
-                option={getHumidityChartOption(hourly?.time?.slice(0, 48) || [], hourly?.relative_humidity_2m?.slice(0, 48) || [], 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No humidity data available" icon="humidity_mid" />
-            )}
-          </div>
-
-          {/* Wind Speed Chart */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-           <div className="flex items-start justify-between mb-4">
-             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Kinetic Wind Speed (10m)</h4>
-             <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-               <p>Updated: {format(new Date(), 'HH:mm')}</p>
-               <p>Range: {chartRangeLabel}</p>
-             </div>
-           </div>
-            {isValidChartData(hourly?.time) && isValidChartData(hourly?.wind_speed_10m) ? (
-              <ReactECharts 
-                option={getWindChartOption(hourly?.time?.slice(0, 48) || [], hourly?.wind_speed_10m?.slice(0, 48) || [], 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No wind data available" icon="air" />
-            )}
-          </div>
-
-          {/* Visibility Chart */}
-          <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/10 transition-transform duration-300 hover:scale-[1.015]">
-            <div className="flex items-start justify-between mb-4">
-              <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Atmospheric Visibility</h4>
-              <div className="text-right text-[10px] leading-tight text-on-surface-variant/80">
-                <p>Updated: {format(new Date(), 'HH:mm')}</p>
-                <p>Range: {chartRangeLabel}</p>
-              </div>
-            </div>
-            {isValidChartData(hourly?.time) && isValidChartData(hourly?.visibility) ? (
-              <ReactECharts 
-                option={getVisibilityChartOption(hourly?.time?.slice(0, 48) || [], (hourly?.visibility?.slice(0, 48) || []).map((v: number) => v / 1000), 'dark')} 
-                style={{ height: '300px', width: '100%' }} 
-                opts={{ renderer: 'svg' }}
-              />
-            ) : (
-              <ChartEmptyState title="No visibility data available" icon="visibility" />
-            )}
-          </div>
-        </div>
-      </section>
-    </>
+    </div>
   );
 };

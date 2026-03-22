@@ -2,18 +2,20 @@ import * as echarts from 'echarts';
 
 const THEME_COLORS = {
   light: {
-    text: '#334155',
-    axis: '#cbd5e1',
-    primary: '#6366f1',
-    secondary: '#0ea5e9',
-    grid: '#dbe4ef'
+    text: '#35343b',
+    axis: '#948e9c',
+    primary: '#6550a8',
+    secondary: '#01419c',
+    tertiary: '#004b70',
+    grid: 'rgba(148, 142, 156, 0.2)'
   },
   dark: {
-    text: '#94a3b8',
-    axis: '#1e293b',
-    primary: '#bac3ff',
-    secondary: '#7dd3fc',
-    grid: '#0f172a'
+    text: '#cac4d3',
+    axis: 'transparent',
+    primary: '#d0c1ff',
+    secondary: '#b0c6ff',
+    tertiary: '#95d0ff',
+    grid: 'rgba(72, 69, 81, 0.2)'
   }
 };
 
@@ -73,8 +75,8 @@ const getResponsiveMedia = (withLegend = false): echarts.EChartsOption['media'] 
 ];
 
 export const getTemperatureChartOption = (
-  times: string[], 
-  temperatures: number[], 
+  times: string[],
+  temperatures: number[],
   unit: 'C' | 'F' = 'C',
   mode: 'light' | 'dark' = 'dark'
 ): echarts.EChartsOption => {
@@ -104,21 +106,22 @@ export const getTemperatureChartOption = (
     },
     yAxis: {
       type: 'value',
-      splitLine: { lineStyle: { color: colors.grid, type: 'dashed' } },
-      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold', formatter: `{value}°` }
+      show: false,
+      splitLine: { show: false },
     },
     series: [
       {
         data: temperatures,
-        type: 'line',
-        smooth: 0.4,
-        symbol: 'none',
-        lineStyle: { width: 4, color: colors.primary, cap: 'round' },
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: `${colors.primary}33` },
-            { offset: 1, color: `${colors.primary}00` }
-          ])
+        type: 'bar',
+        barWidth: '100%',
+        itemStyle: {
+          color: 'rgba(74, 68, 88, 0.8)',
+          borderColor: '#131319',
+          borderWidth: 1,
+          borderRadius: 0
+        },
+        emphasis: {
+          itemStyle: { color: colors.primary }
         }
       }
     ],
@@ -127,8 +130,8 @@ export const getTemperatureChartOption = (
 };
 
 export const getAQIChartOption = (
-  times: string[], 
-  pm25: number[], 
+  times: string[],
+  pm25: number[],
   pm10: number[],
   mode: 'light' | 'dark' = 'dark'
 ): echarts.EChartsOption => {
@@ -152,7 +155,13 @@ export const getAQIChartOption = (
         type: 'line',
         smooth: true,
         symbol: 'none',
-        lineStyle: { width: 3, color: colors.primary }
+        lineStyle: { width: 3, color: colors.primary },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: `${colors.primary}40` },
+            { offset: 1, color: `${colors.primary}00` }
+          ])
+        }
       },
       {
         name: 'PM10',
@@ -160,7 +169,13 @@ export const getAQIChartOption = (
         type: 'line',
         smooth: true,
         symbol: 'none',
-        lineStyle: { width: 3, color: colors.secondary }
+        lineStyle: { width: 3, color: colors.tertiary },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: `${colors.tertiary}40` },
+            { offset: 1, color: `${colors.tertiary}00` }
+          ])
+        }
       }
     ],
     media: getResponsiveMedia(true),
@@ -168,7 +183,7 @@ export const getAQIChartOption = (
 };
 
 export const getHumidityChartOption = (
-  times: string[], 
+  times: string[],
   humidity: number[],
   mode: 'light' | 'dark' = 'dark'
 ): echarts.EChartsOption => {
@@ -186,7 +201,7 @@ export const getHumidityChartOption = (
     series: [{
       data: humidity,
       type: 'bar',
-      itemStyle: { 
+      itemStyle: {
         color: colors.primary,
         borderRadius: [4, 4, 0, 0]
       },
@@ -197,39 +212,51 @@ export const getHumidityChartOption = (
 };
 
 export const getPrecipitationChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
-    const colors = THEME_COLORS[mode];
+  const colors = THEME_COLORS[mode];
   return withChartMicroAnimation({
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
-        dataZoom: getInteractiveDataZoom(),
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', smooth: true, areaStyle: { color: `${colors.secondary}22` }, lineStyle: { color: colors.secondary, width: 3 }, symbol: 'none' }],
-        media: getResponsiveMedia(false),
-    });
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
+    xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
+    yAxis: { type: 'value', min: 0, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
+    series: [{
+      data,
+      type: 'line',
+      smooth: 0.5,
+      symbol: 'none',
+      lineStyle: { color: 'rgba(148, 142, 156, 0.9)', width: 2 },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(148, 142, 156, 0.35)' },
+          { offset: 1, color: 'rgba(148, 142, 156, 0.02)' }
+        ])
+      }
+    }],
+    media: getResponsiveMedia(false),
+  });
 };
 
 export const getWindChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
-    const colors = THEME_COLORS[mode];
+  const colors = THEME_COLORS[mode];
   return withChartMicroAnimation({
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
-        dataZoom: getInteractiveDataZoom(),
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', step: 'middle', lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
-        media: getResponsiveMedia(false),
-    });
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
+    xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
+    series: [{ data, type: 'line', step: 'middle', lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
+    media: getResponsiveMedia(false),
+  });
 };
 
 export const getVisibilityChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
-    const colors = THEME_COLORS[mode];
+  const colors = THEME_COLORS[mode];
   return withChartMicroAnimation({
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
-        dataZoom: getInteractiveDataZoom(),
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
-        yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', smooth: true, lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
-        media: getResponsiveMedia(false),
-    });
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
+    xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
+    yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
+    series: [{ data, type: 'line', smooth: true, lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
+    media: getResponsiveMedia(false),
+  });
 };
 
 export const getHistoricalTemperatureChartOption = (
@@ -271,7 +298,7 @@ export const getSunCycleChartOption = (
     return Number.parseInt(h, 10) * 60 + Number.parseInt(m, 10);
   };
   return withChartMicroAnimation({
-    tooltip: { 
+    tooltip: {
       trigger: 'axis',
       backgroundColor: mode === 'dark' ? '#0f172a' : '#ffffff',
       textStyle: { color: colors.text },
@@ -287,17 +314,17 @@ export const getSunCycleChartOption = (
     grid: { top: '15%', left: '2%', right: '2%', bottom: '14%', containLabel: true },
     dataZoom: getInteractiveDataZoom(),
     xAxis: { type: 'category', data: times.map(t => t.substring(5)), axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
-    yAxis: { 
-      type: 'value', 
-      inverse: true, 
-      axisLabel: { 
+    yAxis: {
+      type: 'value',
+      inverse: true,
+      axisLabel: {
         color: colors.text, fontSize: 10,
-        formatter: (val: number) => `${Math.floor(val/60).toString().padStart(2,'0')}:00` 
-      } 
+        formatter: (val: number) => `${Math.floor(val / 60).toString().padStart(2, '0')}:00`
+      }
     },
     series: [
-      { name: 'Sunrise', data: sunriseTimes.map(parseTime), type: 'line', smooth:true, lineStyle: { color: '#fbbf24', width: 3 }, symbol: 'none' },
-      { name: 'Sunset', data: sunsetTimes.map(parseTime), type: 'line', smooth:true, lineStyle: { color: '#f43f5e', width: 3 }, symbol: 'none' }
+      { name: 'Sunrise', data: sunriseTimes.map(parseTime), type: 'line', smooth: true, lineStyle: { color: '#fbbf24', width: 3 }, symbol: 'none' },
+      { name: 'Sunset', data: sunsetTimes.map(parseTime), type: 'line', smooth: true, lineStyle: { color: '#f43f5e', width: 3 }, symbol: 'none' }
     ],
     media: getResponsiveMedia(true),
   });

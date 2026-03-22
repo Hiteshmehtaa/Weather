@@ -1,7 +1,0 @@
-src/pages/Dashboard.tsx(22,5): error TS2322: Type 'string' is not assignable to type 'DateType'.
-src/pages/Dashboard.tsx(23,5): error TS2322: Type 'string' is not assignable to type 'DateType'.
-src/pages/Dashboard.tsx(26,81): error TS2352: Conversion of type 'DateType | undefined' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-  Type 'Date' is not comparable to type 'string'.
-src/pages/Dashboard.tsx(27,78): error TS2352: Conversion of type 'DateType | undefined' to type 'string' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
-  Type 'Date' is not comparable to type 'string'.
-src/pages/Dashboard.tsx(57,44): error TS2367: This comparison appears to be unintentional because the types 'Date' and 'string' have no overlap.
