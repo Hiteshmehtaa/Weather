@@ -17,6 +17,38 @@ const THEME_COLORS = {
   }
 };
 
+const getInteractiveDataZoom = (start = 0, end = 100): echarts.DataZoomComponentOption[] => [
+  {
+    type: 'inside',
+    xAxisIndex: 0,
+    start,
+    end,
+    moveOnMouseWheel: false,
+    moveOnMouseMove: true,
+    zoomOnMouseWheel: true,
+    preventDefaultMouseMove: false,
+  },
+];
+
+const getResponsiveMedia = (withLegend = false): echarts.EChartsOption['media'] => [
+  {
+    query: { maxWidth: 640 },
+    option: {
+      grid: { top: withLegend ? '20%' : '16%', left: '10%', right: '8%', bottom: withLegend ? '14%' : '10%', containLabel: true },
+      legend: withLegend
+        ? { bottom: 8, itemWidth: 8, itemHeight: 8, textStyle: { fontSize: 9 } }
+        : undefined,
+      xAxis: {
+        axisLabel: { fontSize: 9, rotate: 30, hideOverlap: true, interval: 'auto' },
+      },
+      yAxis: {
+        axisLabel: { fontSize: 9 },
+      },
+      dataZoom: [{ type: 'inside', start: 0, end: 100 }],
+    },
+  },
+];
+
 export const getTemperatureChartOption = (
   times: string[], 
   temperatures: number[], 
@@ -38,16 +70,14 @@ export const getTemperatureChartOption = (
         </div>`;
       }
     },
-    grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-    dataZoom: [
-      { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-    ],
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
     xAxis: {
       type: 'category',
       data: times.map(t => t.split('T')[1]?.substring(0, 5) || t),
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold' }
+      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold', hideOverlap: true, interval: 'auto' }
     },
     yAxis: {
       type: 'value',
@@ -68,7 +98,8 @@ export const getTemperatureChartOption = (
           ])
         }
       }
-    ]
+    ],
+    media: getResponsiveMedia(false),
   };
 };
 
@@ -81,16 +112,14 @@ export const getAQIChartOption = (
   const colors = THEME_COLORS[mode];
   return {
     tooltip: { trigger: 'axis', backgroundColor: mode === 'dark' ? '#0f172a' : '#ffffff', textStyle: { color: colors.text } },
-    legend: { show: true, bottom: 0, itemWidth: 8, itemHeight: 8, textStyle: { color: colors.text, fontWeight: 'bold', fontSize: 10 } },
-    grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-    dataZoom: [
-      { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-    ],
+    legend: { show: true, bottom: 8, itemWidth: 8, itemHeight: 8, textStyle: { color: colors.text, fontWeight: 'bold', fontSize: 10 } },
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '14%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
     xAxis: {
       type: 'category',
       data: times.map(t => t.split('T')[1]?.substring(0, 5) || t),
       axisLine: { show: false },
-      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold' }
+      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold', hideOverlap: true, interval: 'auto' }
     },
     yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
     series: [
@@ -110,7 +139,8 @@ export const getAQIChartOption = (
         symbol: 'none',
         lineStyle: { width: 3, color: colors.secondary }
       }
-    ]
+    ],
+    media: getResponsiveMedia(true),
   };
 };
 
@@ -121,15 +151,13 @@ export const getHumidityChartOption = (
 ): echarts.EChartsOption => {
   const colors = THEME_COLORS[mode];
   return {
-    grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-    dataZoom: [
-      { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-    ],
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
     xAxis: {
       type: 'category',
       data: times.map(t => t.split('T')[1]?.substring(0, 5) || t),
       axisLine: { show: false },
-      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold' }
+      axisLabel: { color: colors.text, fontSize: 10, fontWeight: 'bold', hideOverlap: true, interval: 'auto' }
     },
     yAxis: { type: 'value', min: 0, max: 100, splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
     series: [{
@@ -140,46 +168,44 @@ export const getHumidityChartOption = (
         borderRadius: [4, 4, 0, 0]
       },
       barWidth: '40%'
-    }]
+    }],
+    media: getResponsiveMedia(false),
   };
 };
 
 export const getPrecipitationChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
     const colors = THEME_COLORS[mode];
     return {
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-        dataZoom: [
-          { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-        ],
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10 } },
+        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+        dataZoom: getInteractiveDataZoom(),
+        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
         yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', smooth: true, areaStyle: { color: `${colors.secondary}22` }, lineStyle: { color: colors.secondary, width: 3 }, symbol: 'none' }]
+        series: [{ data, type: 'line', smooth: true, areaStyle: { color: `${colors.secondary}22` }, lineStyle: { color: colors.secondary, width: 3 }, symbol: 'none' }],
+        media: getResponsiveMedia(false),
     };
 };
 
 export const getWindChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
     const colors = THEME_COLORS[mode];
     return {
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-        dataZoom: [
-          { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-        ],
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10 } },
+        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+        dataZoom: getInteractiveDataZoom(),
+        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
         yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', step: 'middle', lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }]
+        series: [{ data, type: 'line', step: 'middle', lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
+        media: getResponsiveMedia(false),
     };
 };
 
 export const getVisibilityChartOption = (times: string[], data: number[], mode: 'light' | 'dark' = 'dark'): echarts.EChartsOption => {
     const colors = THEME_COLORS[mode];
     return {
-        grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-        dataZoom: [
-          { type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }
-        ],
-        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10 } },
+        grid: { top: '15%', left: '2%', right: '2%', bottom: '8%', containLabel: true },
+        dataZoom: getInteractiveDataZoom(),
+        xAxis: { type: 'category', data: times.map(t => t.split('T')[1]?.substring(0, 5) || t), axisLine: { show: false }, axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
         yAxis: { type: 'value', splitLine: { lineStyle: { color: colors.grid } }, axisLabel: { color: colors.text, fontSize: 10 } },
-        series: [{ data, type: 'line', smooth: true, lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }]
+        series: [{ data, type: 'line', smooth: true, lineStyle: { color: colors.primary, width: 3 }, symbol: 'none' }],
+        media: getResponsiveMedia(false),
     };
 };
 
@@ -194,16 +220,17 @@ export const getHistoricalTemperatureChartOption = (
   const colors = THEME_COLORS[mode];
   return {
     tooltip: { trigger: 'axis', backgroundColor: mode === 'dark' ? '#0f172a' : '#ffffff', textStyle: { color: colors.text } },
-    legend: { show: true, textStyle: { color: colors.text, fontWeight: 'bold' } },
-    grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-    dataZoom: [{ type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }],
-    xAxis: { type: 'category', data: times.map(t => t.substring(5)), axisLabel: { color: colors.text, fontSize: 10 } },
+    legend: { show: true, bottom: 8, textStyle: { color: colors.text, fontWeight: 'bold' } },
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '14%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
+    xAxis: { type: 'category', data: times.map(t => t.substring(5)), axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
     yAxis: { type: 'value', axisLabel: { color: colors.text, fontSize: 10, formatter: `{value}°${unit}` } },
     series: [
       { name: 'Max', data: maxTemps, type: 'line', smooth: true, lineStyle: { color: colors.primary, width: 2 }, symbol: 'none' },
       { name: 'Mean', data: meanTemps, type: 'line', smooth: true, lineStyle: { color: '#fbbf24', type: 'dashed', width: 2 }, symbol: 'none' },
       { name: 'Min', data: minTemps, type: 'line', smooth: true, lineStyle: { color: colors.secondary, width: 2 }, symbol: 'none' },
-    ]
+    ],
+    media: getResponsiveMedia(true),
   };
 };
 
@@ -218,7 +245,7 @@ export const getSunCycleChartOption = (
     if (!isoString) return 0;
     const time = isoString.split('T')[1];
     const [h, m] = time.split(':');
-    return parseInt(h) * 60 + parseInt(m);
+    return Number.parseInt(h, 10) * 60 + Number.parseInt(m, 10);
   };
   return {
     tooltip: { 
@@ -233,10 +260,10 @@ export const getSunCycleChartOption = (
         }).join('<br/>');
       }
     },
-    legend: { show: true, textStyle: { color: colors.text, fontWeight: 'bold' } },
-    grid: { top: '15%', left: '2%', right: '2%', bottom: '5%', containLabel: true },
-    dataZoom: [{ type: 'inside', start: 0, end: 100, moveOnMouseWheel: true, moveOnMouseMove: true }],
-    xAxis: { type: 'category', data: times.map(t => t.substring(5)), axisLabel: { color: colors.text, fontSize: 10 } },
+    legend: { show: true, bottom: 8, textStyle: { color: colors.text, fontWeight: 'bold' } },
+    grid: { top: '15%', left: '2%', right: '2%', bottom: '14%', containLabel: true },
+    dataZoom: getInteractiveDataZoom(),
+    xAxis: { type: 'category', data: times.map(t => t.substring(5)), axisLabel: { color: colors.text, fontSize: 10, hideOverlap: true, interval: 'auto' } },
     yAxis: { 
       type: 'value', 
       inverse: true, 
@@ -248,6 +275,7 @@ export const getSunCycleChartOption = (
     series: [
       { name: 'Sunrise', data: sunriseTimes.map(parseTime), type: 'line', smooth:true, lineStyle: { color: '#fbbf24', width: 3 }, symbol: 'none' },
       { name: 'Sunset', data: sunsetTimes.map(parseTime), type: 'line', smooth:true, lineStyle: { color: '#f43f5e', width: 3 }, symbol: 'none' }
-    ]
+    ],
+    media: getResponsiveMedia(true),
   }
 };

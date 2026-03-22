@@ -1,5 +1,6 @@
-import { LayoutDashboard, History, Settings, HelpCircle, Bell, MapPin } from 'lucide-react';
+import { LayoutDashboard, History, Sun, Moon } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
+import { useTheme } from '../store/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -8,12 +9,14 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-background text-on-background selection:bg-primary-dim selection:text-white font-headline relative">
       {/* SideNavBar (Desktop) */}
       <aside className="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-background py-8 gap-4 z-40 border-r border-outline-variant/10">
         <div className="px-8 mb-8">
-          <h1 className="text-xl font-black text-primary">Aether</h1>
+          <h1 className="text-xl font-black text-primary">Assignment</h1>
           <p className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant">Global Forecast</p>
         </div>
 
@@ -48,15 +51,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
         </nav>
 
         <div className="mt-auto px-4 flex flex-col gap-2">
-          
-          <button className="text-on-surface-variant px-4 py-3 flex items-center gap-3 hover:text-on-surface hover:bg-surface-container rounded-full transition-colors duration-200">
-            <Settings size={20} />
-            <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem]">Settings</span>
-          </button>
-          <button className="text-on-surface-variant px-4 py-3 flex items-center gap-3 hover:text-on-surface hover:bg-surface-container rounded-full transition-colors duration-200">
-            <HelpCircle size={20} />
-            <span className="font-label uppercase tracking-[0.05em] text-[0.6875rem]">Support</span>
-          </button>
+          {/* Settings and Support removed per requirements */}
         </div>
       </aside>
 
@@ -67,12 +62,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
           <div className="flex items-center justify-between px-4 md:px-8 py-4">
             {/* Automated Location Spacer */}
             <div className="md:hidden flex items-center flex-1">
-              <h1 className="text-xl font-black text-primary">Aether</h1>
+              <h1 className="text-xl font-black text-primary">Assignment</h1>
             </div>
-            <div className="hidden md:block flex-1 flex items-center gap-2">
-               <span className="material-symbols-outlined text-success text-sm relative top-[1px]">my_location</span>
-               <span className="text-[10px] uppercase tracking-widest font-black text-success">GPS Active</span>
-            </div>
+            <div className="hidden md:block flex-1" />
 
             {/* Date/Time Display */}
             <div className="hidden lg:flex flex-col items-end mr-8">
@@ -86,15 +78,13 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
 
             {/* Actions */}
             <div className="flex flex-shrink-0 items-center gap-2 md:gap-4">
-              <button className="hidden sm:block p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all duration-300 active:scale-95">
-                <Bell size={20} />
+              <button 
+                onClick={toggleTheme}
+                className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all duration-300 active:scale-95"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
               </button>
-              <button className="hidden sm:block p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all duration-300 active:scale-95">
-                <MapPin size={20} />
-              </button>
-              <div className="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant/20 flex items-center justify-center">
-                 <div className="w-full h-full bg-gradient-to-tr from-primary to-primary-dim opacity-80" />
-              </div>
             </div>
           </div>
         </header>
@@ -107,7 +97,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
         {/* Footer Credits */}
         <footer className="mt-auto p-4 md:p-8 border-t border-outline-variant/10 text-center md:text-left">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[0.6875rem] font-medium text-on-surface-variant uppercase tracking-widest">
-            <p>© {new Date().getFullYear()} Aether Atmospheric Technologies</p>
+            <p>© {new Date().getFullYear()} Assignment Atmospheric Technologies</p>
             <div className="flex gap-8">
               <button className="hover:text-primary transition-colors">Privacy</button>
               <button className="hover:text-primary transition-colors">Terms</button>

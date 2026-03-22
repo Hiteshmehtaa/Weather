@@ -45,3 +45,27 @@ export const getWeatherDescription = (code: number) => {
   };
   return codes[code] || 'Unknown';
 };
+
+/**
+ * Validates if an array has sufficient data for chart rendering
+ * @param data - Array to validate
+ * @param minLength - Minimum required length (default: 1)
+ * @returns boolean indicating if data is valid
+ */
+export const isValidChartData = (
+  data: any[] | undefined | null,
+  minLength: number = 1
+): boolean => {
+  return Array.isArray(data) && data.length >= minLength;
+};
+
+/**
+ * Validates multiple data arrays for chart rendering
+ * @param datasets - Array of data arrays to validate
+ * @returns boolean indicating if all datasets are valid
+ */
+export const areValidChartDatas = (
+  datasets: (any[] | undefined | null)[]
+): boolean => {
+  return datasets.every(data => isValidChartData(data, 1));
+};

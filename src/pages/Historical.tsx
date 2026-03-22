@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLocation } from '../hooks/useLocation';
 import { useHistoricalData, useHistoricalAirQualityData } from '../hooks/useWeatherData';
 import { useTheme } from '../store/ThemeContext';
+import { isValidChartData } from '../utils/formatters';
 import ReactECharts from 'echarts-for-react';
 import { 
   getHistoricalTemperatureChartOption, 
@@ -152,6 +153,11 @@ export const Historical: React.FC = () => {
                 <div className="p-2 rounded-xl bg-error/10"><span className="material-symbols-outlined text-error text-[16px]">thermostat</span></div>
                 <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Temperature Corridor Analysis (Min, Max, Mean)</h3>
               </div>
+              <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+              {isValidChartData(historicalData.daily?.time) &&
+              isValidChartData(historicalData.daily?.temperature_2m_max) &&
+              isValidChartData(historicalData.daily?.temperature_2m_min) &&
+              isValidChartData(historicalData.daily?.temperature_2m_mean) ? (
               <ReactECharts 
                 option={getHistoricalTemperatureChartOption(
                   historicalData.daily.time, 
@@ -161,9 +167,14 @@ export const Historical: React.FC = () => {
                   'C', theme
                 )} 
                 style={{ height: '400px', width: '100%' }}
-                className="rounded-[3rem] glass-card p-8"
                 opts={{ renderer: 'svg' }}
               />
+              ) : (
+                <div className="h-[400px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
+                  No temperature data available
+                </div>
+              )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -172,12 +183,20 @@ export const Historical: React.FC = () => {
                         <div className="p-2 rounded-xl bg-tertiary/10"><span className="material-symbols-outlined text-tertiary text-[16px]">water_drop</span></div>
                         <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Cumulative Precipitation</h3>
                     </div>
+                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    {isValidChartData(historicalData.daily?.time) &&
+                    isValidChartData(historicalData.daily?.precipitation_sum) ? (
                     <ReactECharts 
                         option={getPrecipitationChartOption(historicalData.daily.time, historicalData.daily.precipitation_sum, theme)} 
                         style={{ height: '350px', width: '100%' }}
-                        className="rounded-[3rem] glass-card p-8"
                         opts={{ renderer: 'svg' }}
                     />
+                    ) : (
+                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
+                        No precipitation data available
+                      </div>
+                    )}
+                    </div>
                 </div>
 
                 <div className="space-y-6">
@@ -185,12 +204,20 @@ export const Historical: React.FC = () => {
                         <div className="p-2 rounded-xl bg-secondary/10"><span className="material-symbols-outlined text-secondary text-[16px]">air</span></div>
                         <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Kinetic Wind Patterns</h3>
                     </div>
+                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    {isValidChartData(historicalData.daily?.time) &&
+                    isValidChartData(historicalData.daily?.wind_speed_10m_max) ? (
                     <ReactECharts 
                         option={getWindChartOption(historicalData.daily.time, historicalData.daily.wind_speed_10m_max, theme)} 
                         style={{ height: '350px', width: '100%' }}
-                        className="rounded-[3rem] glass-card p-8"
                         opts={{ renderer: 'svg' }}
                     />
+                    ) : (
+                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
+                        No wind data available
+                      </div>
+                    )}
+                    </div>
                 </div>
                 
                 <div className="space-y-6">
@@ -198,12 +225,21 @@ export const Historical: React.FC = () => {
                         <div className="p-2 rounded-xl bg-[#fbbf24]/10"><span className="material-symbols-outlined text-[#fbbf24] text-[16px]">light_mode</span></div>
                         <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Sun Cycle (IST)</h3>
                     </div>
+                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    {isValidChartData(historicalData.daily?.time) &&
+                    isValidChartData(historicalData.daily?.sunrise) &&
+                    isValidChartData(historicalData.daily?.sunset) ? (
                     <ReactECharts 
                         option={getSunCycleChartOption(historicalData.daily.time, historicalData.daily.sunrise, historicalData.daily.sunset, theme)} 
                         style={{ height: '350px', width: '100%' }}
-                        className="rounded-[3rem] glass-card p-8"
                         opts={{ renderer: 'svg' }}
                     />
+                    ) : (
+                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
+                        No sunrise/sunset data available
+                      </div>
+                    )}
+                    </div>
                 </div>
 
                 <div className="space-y-6">
@@ -211,18 +247,21 @@ export const Historical: React.FC = () => {
                         <div className="p-2 rounded-xl bg-error/10"><span className="material-symbols-outlined text-error text-[16px]">air</span></div>
                         <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Historical Air Quality (PM10 & PM2.5)</h3>
                     </div>
-                    {aqData?.hourly?.time ? (
+                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    {isValidChartData(aqData?.hourly?.time) &&
+                    isValidChartData(aqData?.hourly?.pm2_5) &&
+                    isValidChartData(aqData?.hourly?.pm10) ? (
                       <ReactECharts 
                           option={getAQIChartOption(aqData.hourly.time, aqData.hourly.pm2_5, aqData.hourly.pm10, theme)} 
                           style={{ height: '350px', width: '100%' }}
-                          className="rounded-[3rem] glass-card p-8"
                           opts={{ renderer: 'svg' }}
                       />
                     ) : (
-                      <div className="rounded-[3rem] glass-card p-8 h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
+                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
                         Air Quality History Unavailable
                       </div>
                     )}
+                    </div>
                 </div>
             </div>
           </section>

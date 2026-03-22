@@ -5,6 +5,41 @@ export interface Location {
   longitude: number;
 }
 
+// Retry configuration
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_RETRY_DELAY = 1000; // ms
+const IST_TIMEZONE = 'Asia/Kolkata';
+
+const retryFetch = async (
+  url: string,
+  maxRetries = DEFAULT_MAX_RETRIES,
+  retryDelay = DEFAULT_RETRY_DELAY
+) => {
+  let lastError: Error = new Error('Unknown error');
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        return response;
+      }
+      // Don't retry on client errors (4xx)
+      if (response.status >= 400 && response.status < 500) {
+        throw new Error(`Client error: ${response.status}`);
+      }
+      lastError = new Error(`HTTP ${response.status}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < maxRetries) {
+        const delay = retryDelay * Math.pow(2, attempt); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  throw lastError;
+};
+
 export const fetchWeatherData = async (location: Location, date?: string) => {
   const { latitude, longitude } = location;
 
@@ -29,8 +64,7 @@ export const fetchWeatherData = async (location: Location, date?: string) => {
     url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&hourly=${archiveHourly.join(',')}&daily=${WEATHER_PARAMS.daily.join(',')}&timezone=auto&start_date=${date}&end_date=${date}`;
   }
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Weather data fetch failed');
+  const response = await retryFetch(url);
   return response.json();
 };
 
@@ -53,17 +87,15 @@ export const fetchAirQualityData = async (location: Location, date?: string) => 
   let url = `${AIR_QUALITY_API_BASE_URL}/air-quality?latitude=${latitude}&longitude=${longitude}&hourly=${params.join(',')}&timezone=auto`;
   if (date) url += `&start_date=${date}&end_date=${date}`;
 
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Air quality data fetch failed');
+  const response = await retryFetch(url);
   return response.json();
 };
 
 export const fetchHistoricalData = async (location: Location, startDate: string, endDate: string) => {
   const { latitude, longitude } = location;
-  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=${WEATHER_PARAMS.daily.join(',')}&hourly=${WEATHER_PARAMS.hourly.join(',')}&timezone=auto`;
+  const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&daily=${WEATHER_PARAMS.daily.join(',')}&hourly=${WEATHER_PARAMS.hourly.join(',')}&timezone=${IST_TIMEZONE}`;
   
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Historical data fetch failed');
+  const response = await retryFetch(url);
   return response.json();
 };
 
@@ -71,7 +103,6 @@ export const fetchHistoricalAirQualityData = async (location: Location, startDat
   const { latitude, longitude } = location;
   const url = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitude}&longitude=${longitude}&start_date=${startDate}&end_date=${endDate}&hourly=${AIR_QUALITY_PARAMS.join(',')}&timezone=auto`;
   
-  const response = await fetch(url);
-  if (!response.ok) throw new Error('Historical AQI data fetch failed');
+  const response = await retryFetch(url);
   return response.json();
 };

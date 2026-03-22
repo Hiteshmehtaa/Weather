@@ -2,10 +2,11 @@
 import { useWeatherData, useAirQualityData } from '../hooks/useWeatherData';
 import { useLocation } from '../hooks/useLocation';
 import { DashboardSkeleton } from '../components/ui/SkeletonLoader';
-import { getWeatherDescription, formatTemperature } from '../utils/formatters';
+import { getWeatherDescription, formatTemperature, isValidChartData } from '../utils/formatters';
 import ReactECharts from 'echarts-for-react';
 import { format } from 'date-fns';
 import { CalendarPicker } from '../components/ui/CalendarPicker';
+import { useTheme } from '../store/ThemeContext';
 import { 
   getTemperatureChartOption, 
   getHumidityChartOption, 
@@ -16,6 +17,7 @@ import {
 } from '../utils/chartConfigs';
 
 export const Dashboard: React.FC = () => {
+  const { theme } = useTheme();
   const { location, error: locError } = useLocation();
   const [tempUnit, setTempUnit] = React.useState<'C' | 'F'>('C');
   const [selectedDate, setSelectedDate] = React.useState<Date>(new Date());
@@ -249,61 +251,97 @@ export const Dashboard: React.FC = () => {
           {/* Temperature Chart */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">Temperature Profile</h4>
-            <ReactECharts 
-              option={getTemperatureChartOption(hourly?.time?.slice(0, 48) || [], hourly?.temperature_2m?.slice(0, 48) || [], tempUnit, 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(hourly?.time) && isValidChartData(hourly?.temperature_2m) ? (
+              <ReactECharts 
+                option={getTemperatureChartOption(hourly?.time?.slice(0, 48) || [], hourly?.temperature_2m?.slice(0, 48) || [], tempUnit, theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No temperature data available</p>
+              </div>
+            )}
           </div>
 
           {/* Precipitation & Real-time Info */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">Precipitation Outlook</h4>
-            <ReactECharts 
-              option={getPrecipitationChartOption(hourly?.time?.slice(0, 48) || [], hourly?.precipitation?.slice(0, 48) || [], 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(hourly?.time) && isValidChartData(hourly?.precipitation) ? (
+              <ReactECharts 
+                option={getPrecipitationChartOption(hourly?.time?.slice(0, 48) || [], hourly?.precipitation?.slice(0, 48) || [], theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No precipitation data available</p>
+              </div>
+            )}
           </div>
 
           {/* PM10 / PM2.5 Chart */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">PM10 & PM2.5 Particulates</h4>
-            <ReactECharts 
-              option={getAQIChartOption(aqData?.hourly?.time?.slice(0, 48) || [], aqData?.hourly?.pm2_5?.slice(0, 48) || [], aqData?.hourly?.pm10?.slice(0, 48) || [], 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(aqData?.hourly?.time) && isValidChartData(aqData?.hourly?.pm2_5) && isValidChartData(aqData?.hourly?.pm10) ? (
+              <ReactECharts 
+                option={getAQIChartOption(aqData?.hourly?.time?.slice(0, 48) || [], aqData?.hourly?.pm2_5?.slice(0, 48) || [], aqData?.hourly?.pm10?.slice(0, 48) || [], theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No air quality data available</p>
+              </div>
+            )}
           </div>
 
           {/* Humidity Chart */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">Relative Humidity Variance</h4>
-            <ReactECharts 
-              option={getHumidityChartOption(hourly?.time?.slice(0, 48) || [], hourly?.relative_humidity_2m?.slice(0, 48) || [], 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(hourly?.time) && isValidChartData(hourly?.relative_humidity_2m) ? (
+              <ReactECharts 
+                option={getHumidityChartOption(hourly?.time?.slice(0, 48) || [], hourly?.relative_humidity_2m?.slice(0, 48) || [], theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No humidity data available</p>
+              </div>
+            )}
           </div>
 
           {/* Wind Speed Chart */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
            <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">Kinetic Wind Speed (10m)</h4>
-            <ReactECharts 
-              option={getWindChartOption(hourly?.time?.slice(0, 48) || [], hourly?.wind_speed_10m?.slice(0, 48) || [], 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(hourly?.time) && isValidChartData(hourly?.wind_speed_10m) ? (
+              <ReactECharts 
+                option={getWindChartOption(hourly?.time?.slice(0, 48) || [], hourly?.wind_speed_10m?.slice(0, 48) || [], theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No wind data available</p>
+              </div>
+            )}
           </div>
 
           {/* Visibility Chart */}
           <div className="bg-surface-container rounded-xl p-6 border border-outline-variant/5">
             <h4 className="font-label uppercase tracking-[0.05em] text-[0.6875rem] text-on-surface-variant mb-4">Atmospheric Visibility</h4>
-            <ReactECharts 
-              option={getVisibilityChartOption(hourly?.time?.slice(0, 48) || [], (hourly?.visibility?.slice(0, 48) || []).map((v: number) => v / 1000), 'dark')} 
-              style={{ height: '300px', width: '100%' }} 
-              opts={{ renderer: 'svg' }}
-            />
+            {isValidChartData(hourly?.time) && isValidChartData(hourly?.visibility) ? (
+              <ReactECharts 
+                option={getVisibilityChartOption(hourly?.time?.slice(0, 48) || [], (hourly?.visibility?.slice(0, 48) || []).map((v: number) => v / 1000), theme)} 
+                style={{ height: '300px', width: '100%' }} 
+                opts={{ renderer: 'svg' }}
+              />
+            ) : (
+              <div className="h-[300px] flex items-center justify-center bg-surface-container-low rounded-lg border border-outline-variant/10">
+                <p className="text-on-surface-variant/60 text-sm">No visibility data available</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
