@@ -1,6 +1,5 @@
-import { LayoutDashboard, History, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, History } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
-import { useTheme } from '../store/ThemeContext';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -9,8 +8,6 @@ interface LayoutProps {
 }
 
 export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
-  const { theme, toggleTheme } = useTheme();
-
   return (
     <div className="min-h-screen bg-background text-on-background selection:bg-primary-dim selection:text-white font-headline relative">
       {/* SideNavBar (Desktop) */}
@@ -25,7 +22,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
           <button 
             onClick={() => onPageChange('dashboard')}
             className={twMerge(
-              "rounded-full px-4 py-3 mx-2 flex items-center gap-3 transition-colors duration-200",
+              "rounded-full px-4 py-3 mx-2 flex items-center gap-3 transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
               currentPage === 'dashboard' 
                 ? "bg-surface-container-high text-primary" 
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
@@ -39,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
           <button 
             onClick={() => onPageChange('historical')}
             className={twMerge(
-              "rounded-full px-4 py-3 mx-2 flex items-center gap-3 transition-colors duration-200",
+              "rounded-full px-4 py-3 mx-2 flex items-center gap-3 transition-colors duration-200 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
               currentPage === 'historical' 
                 ? "bg-surface-container-high text-primary" 
                 : "text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
@@ -77,15 +74,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
             </div>
 
             {/* Actions */}
-            <div className="flex flex-shrink-0 items-center gap-2 md:gap-4">
-              <button 
-                onClick={toggleTheme}
-                className="p-2 text-on-surface-variant hover:bg-surface-container-high rounded-full transition-all duration-300 active:scale-95"
-                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-              >
-                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-              </button>
-            </div>
+            <div className="flex flex-shrink-0 items-center gap-2 md:gap-4" />
           </div>
         </header>
 
@@ -94,30 +83,20 @@ export const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageCha
           {children}
         </div>
 
-        {/* Footer Credits */}
-        <footer className="mt-auto p-4 md:p-8 border-t border-outline-variant/10 text-center md:text-left">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-[0.6875rem] font-medium text-on-surface-variant uppercase tracking-widest">
-            <p>© {new Date().getFullYear()} Assignment Atmospheric Technologies</p>
-            <div className="flex gap-8">
-              <button className="hover:text-primary transition-colors">Privacy</button>
-              <button className="hover:text-primary transition-colors">Terms</button>
-            </div>
-          </div>
-        </footer>
       </main>
 
       {/* Mobile Bottom Navigation (Visible ONLY on small screens) */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md border-t border-outline-variant/10 flex items-center justify-around py-4 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <button 
           onClick={() => onPageChange('dashboard')}
-          className={`flex flex-col items-center gap-1 transition-colors ${currentPage === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
+          className={`flex flex-col items-center gap-1 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-3 py-1 ${currentPage === 'dashboard' ? 'text-primary' : 'text-on-surface-variant'}`}
         >
           <LayoutDashboard size={20} />
           <span className="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
         </button>
         <button 
           onClick={() => onPageChange('historical')}
-          className={`flex flex-col items-center gap-1 transition-colors ${currentPage === 'historical' ? 'text-primary' : 'text-on-surface-variant'}`}
+          className={`flex flex-col items-center gap-1 transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl px-3 py-1 ${currentPage === 'historical' ? 'text-primary' : 'text-on-surface-variant'}`}
         >
           <History size={20} />
           <span className="text-[10px] font-bold uppercase tracking-widest">Historical</span>

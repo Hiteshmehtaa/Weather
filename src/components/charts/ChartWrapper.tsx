@@ -65,7 +65,7 @@ export const ChartWrapper: React.FC<ChartWrapperProps> = ({
         option={mergedOption}
         style={{ height: '100%', width: '100%' }}
         opts={{ renderer: 'canvas' }}
-        theme="light" // We will handle dark mode via option colors in chartConfigs
+        theme="dark"
       />
     </motion.div>
   );

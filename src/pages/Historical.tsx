@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation } from '../hooks/useLocation';
 import { useHistoricalData, useHistoricalAirQualityData } from '../hooks/useWeatherData';
-import { useTheme } from '../store/ThemeContext';
 import { isValidChartData } from '../utils/formatters';
 import ReactECharts from 'echarts-for-react';
 import { 
@@ -13,9 +12,9 @@ import {
 } from '../utils/chartConfigs';
 import { format, subDays } from 'date-fns';
 import { DateRangePicker } from '../components/ui/DateRangePicker';
+import { ChartEmptyState } from '../components/ui/ChartEmptyState';
 
 export const Historical: React.FC = () => {
-  const { theme } = useTheme();
   const { location } = useLocation();
 
   const maxAllowedDate = subDays(new Date(), 3);
@@ -46,13 +45,19 @@ export const Historical: React.FC = () => {
 
   const isDataReady = !isLoading && !aqLoading && !error && historicalData && historicalData.daily;
 
-  let maxTemp = 0, maxRain = 0, maxWind = 0, maxWindDirDegrees = 0;
+  let maxTemp = 0, minTemp = 0, maxRain = 0, maxWind = 0, maxWindDirDegrees = 0;
+  let wettestDay = '--';
+  let windiestDay = '--';
   
   if (isDataReady) {
     maxTemp = Math.max(...(historicalData.daily.temperature_2m_max || [0]));
+    minTemp = Math.min(...(historicalData.daily.temperature_2m_min || [0]));
     maxRain = Math.max(...(historicalData.daily.precipitation_sum || [0]));
     maxWind = Math.max(...(historicalData.daily.wind_speed_10m_max || [0]));
     const maxWindIndex = (historicalData.daily.wind_speed_10m_max || []).indexOf(maxWind);
+    const maxRainIndex = (historicalData.daily.precipitation_sum || []).indexOf(maxRain);
+    wettestDay = historicalData.daily.time?.[Math.max(0, maxRainIndex)] || '--';
+    windiestDay = historicalData.daily.time?.[Math.max(0, maxWindIndex)] || '--';
     maxWindDirDegrees = historicalData.daily.wind_direction_10m_dominant?.[Math.max(0, maxWindIndex)] || 0;
   }
 
@@ -60,6 +65,11 @@ export const Historical: React.FC = () => {
     const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
     return directions[Math.round(deg / 45) % 8];
   };
+
+  const rangeDays = Math.max(
+    1,
+    Math.round((dateRange.endDate.getTime() - dateRange.startDate.getTime()) / (1000 * 3600 * 24))
+  );
 
   return (
     <div className="space-y-12 pb-12">
@@ -115,45 +125,72 @@ export const Historical: React.FC = () => {
       ) : (
         <>
           {/* Analytics Insight Cards */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
-             <div className="p-8 rounded-[3rem] glass-card space-y-6 group hover:bg-surface-container-high transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-error/10 flex items-center justify-center group-hover:bg-error transition-colors">
-                  <span className="material-symbols-outlined text-error group-hover:text-on-error">thermostat</span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Peak Thermal</p>
-                  <h3 className="text-4xl font-black tracking-tight text-on-surface">{maxTemp}°C</h3>
-                </div>
-             </div>
-             <div className="p-8 rounded-[3rem] glass-card space-y-6 group hover:bg-surface-container-high transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-tertiary/10 flex items-center justify-center group-hover:bg-tertiary transition-colors">
-                  <span className="material-symbols-outlined text-tertiary group-hover:text-on-tertiary">water_drop</span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Precipitation Spike</p>
-                  <h3 className="text-4xl font-black tracking-tight text-on-surface">{maxRain}mm</h3>
-                </div>
-             </div>
-             <div className="p-8 rounded-[3rem] glass-card space-y-6 group hover:bg-surface-container-high transition-all">
-                <div className="w-12 h-12 rounded-2xl bg-secondary/10 flex items-center justify-center group-hover:bg-secondary transition-colors">
-                  <span className="material-symbols-outlined text-secondary group-hover:text-on-secondary">air</span>
-                </div>
-                <div className="space-y-1 flex flex-col justify-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Wind Amplitude & Direction</p>
-                  <h3 className="text-4xl font-black tracking-tight text-on-surface mt-1">{maxWind} <span className="text-sm text-on-surface-variant">km/h {getWindDirectionStr(maxWindDirDegrees)}</span></h3>
-                  <p className="text-[10px] text-on-surface-variant mt-2 font-medium">Kinetic Vector: {maxWindDirDegrees}°</p>
-                </div>
-             </div>
+          <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 stagger-reveal" style={{ animationDelay: '60ms' }}>
+            <article className="glass-card rounded-3xl p-6 border border-outline-variant/15 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:bg-surface-container-high">
+              <div className="w-11 h-11 rounded-2xl bg-error/10 flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-error">thermostat</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-1">Peak Thermal</p>
+              <h3 className="text-4xl font-black tracking-tight text-on-surface">{maxTemp}°C</h3>
+            </article>
+
+            <article className="glass-card rounded-3xl p-6 border border-outline-variant/15 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:bg-surface-container-high">
+              <div className="w-11 h-11 rounded-2xl bg-tertiary/10 flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-tertiary">water_drop</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-1">Precipitation Spike</p>
+              <h3 className="text-4xl font-black tracking-tight text-on-surface">{maxRain}mm</h3>
+            </article>
+
+            <article className="glass-card rounded-3xl p-6 border border-outline-variant/15 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:bg-surface-container-high">
+              <div className="w-11 h-11 rounded-2xl bg-secondary/10 flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-secondary">air</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-1">Max Wind & Direction</p>
+              <h3 className="text-4xl font-black tracking-tight text-on-surface">{maxWind} <span className="text-sm text-on-surface-variant">km/h</span></h3>
+              <p className="text-xs text-on-surface-variant mt-2">{getWindDirectionStr(maxWindDirDegrees)} at {maxWindDirDegrees}°</p>
+            </article>
+
+            <article className="glass-card rounded-3xl p-6 border border-outline-variant/15 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 hover:bg-surface-container-high">
+              <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center mb-5">
+                <span className="material-symbols-outlined text-primary">calendar_month</span>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant mb-1">Analysis Window</p>
+              <h3 className="text-4xl font-black tracking-tight text-on-surface">{rangeDays}</h3>
+              <p className="text-xs text-on-surface-variant mt-2">Days in selected range</p>
+            </article>
+          </section>
+
+          <section className="rounded-3xl bg-surface-container/65 card-soft-depth p-4 md:p-5 grid grid-cols-2 lg:grid-cols-4 gap-4 stagger-reveal" style={{ animationDelay: '130ms' }}>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Date Span</p>
+              <p className="text-sm md:text-base font-semibold text-on-surface mt-1">{format(dateRange.startDate, 'dd MMM yyyy')} - {format(dateRange.endDate, 'dd MMM yyyy')}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Max / Min Temp</p>
+              <p className="text-sm md:text-base font-semibold text-on-surface mt-1">{maxTemp}°C / {minTemp}°C</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Wettest Day</p>
+              <p className="text-sm md:text-base font-semibold text-on-surface mt-1">{wettestDay !== '--' ? format(new Date(wettestDay), 'dd MMM yyyy') : '--'}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-on-surface-variant font-semibold">Windiest Day</p>
+              <p className="text-sm md:text-base font-semibold text-on-surface mt-1">{windiestDay !== '--' ? format(new Date(windiestDay), 'dd MMM yyyy') : '--'}</p>
+            </div>
           </section>
 
           {/* Visualization Grid */}
-          <section className="space-y-12">
-            <div className="space-y-6">
-               <div className="flex items-center gap-3 px-2">
+          <section className="space-y-8 stagger-reveal" style={{ animationDelay: '220ms' }}>
+            <div className="rounded-[2rem] glass-card card-soft-depth p-8 border border-outline-variant/15 transition-transform duration-300 hover:scale-[1.01]">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-xl bg-error/10"><span className="material-symbols-outlined text-error text-[16px]">thermostat</span></div>
-                <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Temperature Corridor Analysis (Min, Max, Mean)</h3>
+                <div>
+                  <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Temperature Corridor Analysis (Min, Max, Mean)</h3>
+                  <p className="text-[10px] text-on-surface-variant mt-1">Updated: {format(new Date(), 'HH:mm')} • Range: {format(dateRange.startDate, 'dd MMM')} - {format(dateRange.endDate, 'dd MMM')}</p>
+                </div>
               </div>
-              <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+              <div className="rounded-[1.5rem] bg-surface-container-low/40 p-4 overflow-hidden">
               {isValidChartData(historicalData.daily?.time) &&
               isValidChartData(historicalData.daily?.temperature_2m_max) &&
               isValidChartData(historicalData.daily?.temperature_2m_min) &&
@@ -164,102 +201,104 @@ export const Historical: React.FC = () => {
                   historicalData.daily.temperature_2m_max,
                   historicalData.daily.temperature_2m_min,
                   historicalData.daily.temperature_2m_mean,
-                  'C', theme
+                  'C', 'dark'
                 )} 
                 style={{ height: '400px', width: '100%' }}
                 opts={{ renderer: 'svg' }}
               />
               ) : (
-                <div className="h-[400px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
-                  No temperature data available
-                </div>
+                <ChartEmptyState title="No temperature data available" />
               )}
               </div>
-            </div>
+              </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                <div className="rounded-[2rem] glass-card card-soft-depth p-6 border border-outline-variant/15 transition-transform duration-300 hover:scale-[1.01]">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 rounded-xl bg-tertiary/10"><span className="material-symbols-outlined text-tertiary text-[16px]">water_drop</span></div>
-                        <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Cumulative Precipitation</h3>
+                        <div>
+                          <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Cumulative Precipitation</h3>
+                          <p className="text-[10px] text-on-surface-variant mt-1">Updated: {format(new Date(), 'HH:mm')}</p>
+                        </div>
                     </div>
-                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    <div className="rounded-[1.5rem] bg-surface-container-low/40 p-4 overflow-hidden">
                     {isValidChartData(historicalData.daily?.time) &&
                     isValidChartData(historicalData.daily?.precipitation_sum) ? (
                     <ReactECharts 
-                        option={getPrecipitationChartOption(historicalData.daily.time, historicalData.daily.precipitation_sum, theme)} 
+                        option={getPrecipitationChartOption(historicalData.daily.time, historicalData.daily.precipitation_sum, 'dark')} 
                         style={{ height: '350px', width: '100%' }}
                         opts={{ renderer: 'svg' }}
                     />
                     ) : (
-                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
-                        No precipitation data available
-                      </div>
+                      <ChartEmptyState title="No precipitation data available" icon="rainy" className="min-h-[350px]" />
                     )}
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
+                  <div className="rounded-[2rem] glass-card card-soft-depth p-6 border border-outline-variant/15 transition-transform duration-300 hover:scale-[1.01]">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 rounded-xl bg-secondary/10"><span className="material-symbols-outlined text-secondary text-[16px]">air</span></div>
-                        <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Kinetic Wind Patterns</h3>
+                        <div>
+                          <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Kinetic Wind Patterns</h3>
+                          <p className="text-[10px] text-on-surface-variant mt-1">Updated: {format(new Date(), 'HH:mm')}</p>
+                        </div>
                     </div>
-                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    <div className="rounded-[1.5rem] bg-surface-container-low/40 p-4 overflow-hidden">
                     {isValidChartData(historicalData.daily?.time) &&
                     isValidChartData(historicalData.daily?.wind_speed_10m_max) ? (
                     <ReactECharts 
-                        option={getWindChartOption(historicalData.daily.time, historicalData.daily.wind_speed_10m_max, theme)} 
+                        option={getWindChartOption(historicalData.daily.time, historicalData.daily.wind_speed_10m_max, 'dark')} 
                         style={{ height: '350px', width: '100%' }}
                         opts={{ renderer: 'svg' }}
                     />
                     ) : (
-                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
-                        No wind data available
-                      </div>
+                      <ChartEmptyState title="No wind data available" icon="air" className="min-h-[350px]" />
                     )}
                     </div>
                 </div>
                 
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
+                  <div className="rounded-[2rem] glass-card card-soft-depth p-6 border border-outline-variant/15 transition-transform duration-300 hover:scale-[1.01]">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 rounded-xl bg-[#fbbf24]/10"><span className="material-symbols-outlined text-[#fbbf24] text-[16px]">light_mode</span></div>
-                        <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Sun Cycle (IST)</h3>
+                        <div>
+                          <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Sun Cycle (IST)</h3>
+                          <p className="text-[10px] text-on-surface-variant mt-1">Updated: {format(new Date(), 'HH:mm')}</p>
+                        </div>
                     </div>
-                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    <div className="rounded-[1.5rem] bg-surface-container-low/40 p-4 overflow-hidden">
                     {isValidChartData(historicalData.daily?.time) &&
                     isValidChartData(historicalData.daily?.sunrise) &&
                     isValidChartData(historicalData.daily?.sunset) ? (
                     <ReactECharts 
-                        option={getSunCycleChartOption(historicalData.daily.time, historicalData.daily.sunrise, historicalData.daily.sunset, theme)} 
+                        option={getSunCycleChartOption(historicalData.daily.time, historicalData.daily.sunrise, historicalData.daily.sunset, 'dark')} 
                         style={{ height: '350px', width: '100%' }}
                         opts={{ renderer: 'svg' }}
                     />
                     ) : (
-                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
-                        No sunrise/sunset data available
-                      </div>
+                      <ChartEmptyState title="No sunrise/sunset data available" icon="light_mode" className="min-h-[350px]" />
                     )}
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="flex items-center gap-3 px-2">
+                  <div className="rounded-[2rem] glass-card card-soft-depth p-6 border border-outline-variant/15 transition-transform duration-300 hover:scale-[1.01]">
+                    <div className="flex items-center gap-3 mb-4">
                         <div className="p-2 rounded-xl bg-error/10"><span className="material-symbols-outlined text-error text-[16px]">air</span></div>
-                        <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Historical Air Quality (PM10 & PM2.5)</h3>
+                        <div>
+                          <h3 className="font-label text-[11px] font-black tracking-tight uppercase text-on-surface-variant">Historical Air Quality (PM10 & PM2.5)</h3>
+                          <p className="text-[10px] text-on-surface-variant mt-1">Updated: {format(new Date(), 'HH:mm')}</p>
+                        </div>
                     </div>
-                    <div className="rounded-[3rem] glass-card p-8 overflow-hidden">
+                    <div className="rounded-[1.5rem] bg-surface-container-low/40 p-4 overflow-hidden">
                     {isValidChartData(aqData?.hourly?.time) &&
                     isValidChartData(aqData?.hourly?.pm2_5) &&
                     isValidChartData(aqData?.hourly?.pm10) ? (
                       <ReactECharts 
-                          option={getAQIChartOption(aqData.hourly.time, aqData.hourly.pm2_5, aqData.hourly.pm10, theme)} 
+                          option={getAQIChartOption(aqData.hourly.time, aqData.hourly.pm2_5, aqData.hourly.pm10, 'dark')} 
                           style={{ height: '350px', width: '100%' }}
                           opts={{ renderer: 'svg' }}
                       />
                     ) : (
-                      <div className="h-[350px] flex items-center justify-center text-on-surface-variant font-bold uppercase tracking-widest text-[10px]">
-                        Air Quality History Unavailable
-                      </div>
+                      <ChartEmptyState title="Air quality history unavailable" icon="air" className="min-h-[350px]" />
                     )}
                     </div>
                 </div>
