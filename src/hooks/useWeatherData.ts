@@ -1,18 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchWeatherData, fetchAirQualityData, fetchHistoricalData, fetchHistoricalAirQualityData, Location } from '../services/api';
 
-export const useWeatherData = (location: Location | null) => {
+export const useWeatherData = (location: Location | null, date?: string) => {
   return useQuery({
-    queryKey: ['weather', location?.latitude, location?.longitude],
-    queryFn: () => fetchWeatherData(location!),
+    queryKey: ['weather', location?.latitude, location?.longitude, date],
+    queryFn: () => fetchWeatherData(location!, date),
     enabled: !!location,
   });
 };
 
-export const useAirQualityData = (location: Location | null) => {
+export const useAirQualityData = (location: Location | null, date?: string) => {
   return useQuery({
-    queryKey: ['airQuality', location?.latitude, location?.longitude],
-    queryFn: () => fetchAirQualityData(location!),
+    queryKey: ['airQuality', location?.latitude, location?.longitude, date],
+    queryFn: () => fetchAirQualityData(location!, date),
     enabled: !!location,
   });
 };

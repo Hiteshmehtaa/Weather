@@ -5,19 +5,54 @@ export interface Location {
   longitude: number;
 }
 
-export const fetchWeatherData = async (location: Location) => {
+export const fetchWeatherData = async (location: Location, date?: string) => {
   const { latitude, longitude } = location;
-  const url = `${API_BASE_URL}/forecast?latitude=${latitude}&longitude=${longitude}&current=${WEATHER_PARAMS.current.join(',')}&hourly=${WEATHER_PARAMS.hourly.join(',')}&daily=${WEATHER_PARAMS.daily.join(',')}&timezone=auto`;
-  
+
+  // Determine if date is historical (> 7 days ago). Forecast API only covers ~7 days back.
+  const isHistorical = (() => {
+    if (!date) return false;
+    const selected = new Date(date);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    return selected < cutoff;
+  })();
+
+  let url: string;
+
+  if (!date || !isHistorical) {
+    // Use forecast API — supports current + hourly + daily for recent/future dates
+    url = `${API_BASE_URL}/forecast?latitude=${latitude}&longitude=${longitude}&current=${WEATHER_PARAMS.current.join(',')}&hourly=${WEATHER_PARAMS.hourly.join(',')}&daily=${WEATHER_PARAMS.daily.join(',')}&timezone=auto`;
+    if (date) url += `&start_date=${date}&end_date=${date}`;
+  } else {
+    // Use archive API — no 'current', no 'precipitation_probability' in hourly
+    const archiveHourly = WEATHER_PARAMS.hourly.filter(p => p !== 'precipitation_probability');
+    url = `https://archive-api.open-meteo.com/v1/archive?latitude=${latitude}&longitude=${longitude}&hourly=${archiveHourly.join(',')}&daily=${WEATHER_PARAMS.daily.join(',')}&timezone=auto&start_date=${date}&end_date=${date}`;
+  }
+
   const response = await fetch(url);
   if (!response.ok) throw new Error('Weather data fetch failed');
   return response.json();
 };
 
-export const fetchAirQualityData = async (location: Location) => {
+export const fetchAirQualityData = async (location: Location, date?: string) => {
   const { latitude, longitude } = location;
-  const url = `${AIR_QUALITY_API_BASE_URL}/air-quality?latitude=${latitude}&longitude=${longitude}&hourly=${AIR_QUALITY_PARAMS.join(',')}&timezone=auto`;
-  
+
+  const isHistorical = (() => {
+    if (!date) return false;
+    const selected = new Date(date);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    return selected < cutoff;
+  })();
+
+  // For historical AQ, carbon_dioxide is often unavailable — drop it to avoid 400s
+  const params = isHistorical
+    ? AIR_QUALITY_PARAMS.filter(p => p !== 'carbon_dioxide')
+    : AIR_QUALITY_PARAMS;
+
+  let url = `${AIR_QUALITY_API_BASE_URL}/air-quality?latitude=${latitude}&longitude=${longitude}&hourly=${params.join(',')}&timezone=auto`;
+  if (date) url += `&start_date=${date}&end_date=${date}`;
+
   const response = await fetch(url);
   if (!response.ok) throw new Error('Air quality data fetch failed');
   return response.json();

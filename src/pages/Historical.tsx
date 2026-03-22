@@ -11,70 +11,36 @@ import {
   getAQIChartOption
 } from '../utils/chartConfigs';
 import { format, subDays } from 'date-fns';
-
-import Datepicker, { DateValueType } from "react-tailwindcss-datepicker";
+import { DateRangePicker } from '../components/ui/DateRangePicker';
 
 export const Historical: React.FC = () => {
   const { theme } = useTheme();
   const { location } = useLocation();
 
-  const maxAllowedDate = format(subDays(new Date(), 3), 'yyyy-MM-dd');
+  const maxAllowedDate = subDays(new Date(), 3);
   
-  const [activeDateRange, setActiveDateRange] = useState(() => ({
-    startDate: format(subDays(new Date(), 33), 'yyyy-MM-dd'),
+  const [dateRange, setDateRange] = useState({
+    startDate: subDays(new Date(), 33),
     endDate: maxAllowedDate
-  }));
-
-  const [dateRange, setDateRange] = useState<DateValueType>({
-    startDate: new Date(activeDateRange.startDate),
-    endDate: new Date(activeDateRange.endDate)
   });
-  
+
   const [dateError, setDateError] = useState('');
 
-  const { data: historicalData, isLoading, error } = useHistoricalData(
-    location, 
-    activeDateRange.startDate, 
-    activeDateRange.endDate
-  );
-  
-  const { data: aqData, isLoading: aqLoading } = useHistoricalAirQualityData(
-    location, 
-    activeDateRange.startDate, 
-    activeDateRange.endDate
-  );
+  // Format for API
+  const apiStart = format(dateRange.startDate, 'yyyy-MM-dd');
+  const apiEnd   = format(dateRange.endDate,   'yyyy-MM-dd');
 
-  const handleDateChange = (newValue: DateValueType) => {
-    if (newValue) {
-      setDateRange(newValue);
-    }
-    setDateError('');
-  };
+  const { data: historicalData, isLoading, error } = useHistoricalData(location, apiStart, apiEnd);
+  const { data: aqData, isLoading: aqLoading } = useHistoricalAirQualityData(location, apiStart, apiEnd);
 
-  const handleUpdate = () => {
-    if (!dateRange?.startDate || !dateRange?.endDate) {
-       setDateError('Please select a full date range.');
-       return;
-    }
-
-    const s = dateRange.startDate instanceof Date ? dateRange.startDate : new Date(dateRange.startDate as string);
-    const e = dateRange.endDate instanceof Date ? dateRange.endDate : new Date(dateRange.endDate as string);
-    
-    if (s > e) {
-      setDateError('Start Date must precede End Date.');
-      return;
-    }
-    
-    const diffTime = e.getTime() - s.getTime();
+  const handleDateChange = (newRange: { startDate: Date; endDate: Date }) => {
+    const diffTime = newRange.endDate.getTime() - newRange.startDate.getTime();
     if (diffTime / (1000 * 3600 * 24) > 730) {
       setDateError('Range limited to 2 years max.');
       return;
     }
-    
-    setActiveDateRange({
-      startDate: format(s, 'yyyy-MM-dd'),
-      endDate: format(e, 'yyyy-MM-dd')
-    });
+    setDateError('');
+    setDateRange(newRange);
   };
 
   const isDataReady = !isLoading && !aqLoading && !error && historicalData && historicalData.daily;
@@ -115,28 +81,14 @@ export const Historical: React.FC = () => {
                 <span className="material-symbols-outlined text-primary">calendar_today</span>
                 <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">Analysis Period (Max 2 Years)</span>
               </div>
-              {dateError && <span className="text-[10px] text-error font-bold uppercase tracking-widest">{dateError}</span>}
             </div>
             <div className="flex items-center gap-2 relative z-50">
-              <div className="w-72">
-                <Datepicker 
-                  value={dateRange} 
-                  onChange={handleDateChange} 
-                  maxDate={new Date(maxAllowedDate)}
-                  useRange={false}
-                  showShortcuts={true}
-                  primaryColor={"violet"}
-                  inputClassName="bg-background border border-outline-variant/20 rounded-xl px-4 py-2 text-sm text-on-surface focus:outline-none focus:ring-1 focus:ring-primary w-full cursor-pointer placeholder-on-surface-variant/50"
-                  toggleClassName="absolute bg-transparent rounded-r-lg text-primary right-0 h-full px-3 text-on-surface-variant focus:outline-none"
-                />
-              </div>
-              <button 
-                onClick={handleUpdate}
-                disabled={isLoading || aqLoading}
-                className="bg-primary hover:bg-primary-dim text-on-primary rounded-xl px-4 py-2 text-[11px] font-black uppercase tracking-widest transition-colors disabled:opacity-50 h-full min-h-[38px]"
-              >
-                Fetch
-              </button>
+              <DateRangePicker
+                value={dateRange as { startDate: Date; endDate: Date }}
+                onChange={handleDateChange}
+                maxDate={maxAllowedDate}
+                error={dateError}
+              />
             </div>
           </div>
       </section>
