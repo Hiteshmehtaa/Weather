@@ -79,8 +79,10 @@ export const getTemperatureChartOption = (
   temperatures: number[],
   unit: 'C' | 'F' = 'C',
   mode: 'light' | 'dark' = 'dark'
-): echarts.EChartsOption => {
+) : echarts.EChartsOption => {
   const colors = THEME_COLORS[mode];
+  const convert = (c: number) => unit === 'F' ? Math.round(c * 9 / 5 + 32) : c;
+  const convertedTemps = temperatures.map(convert);
   return withChartMicroAnimation({
     tooltip: {
       trigger: 'axis',
@@ -111,7 +113,7 @@ export const getTemperatureChartOption = (
     },
     series: [
       {
-        data: temperatures,
+        data: convertedTemps,
         type: 'bar',
         barWidth: '100%',
         itemStyle: {

@@ -263,16 +263,24 @@ export const Dashboard: React.FC = () => {
         <section className="space-y-8 stagger-reveal pb-64" style={{ animationDelay: '160ms' }}>
           <div className="flex flex-col md:flex-row items-baseline md:items-center justify-between gap-4 mb-2">
             <h3 className="font-headline text-2xl font-bold">Orbital Timeline</h3>
-            <div className="flex gap-2 p-1 bg-surface-container-highest rounded-lg border border-outline-variant/20">
-              <button 
+            <div className="relative flex gap-0 p-1 bg-surface-container-highest rounded-lg border border-outline-variant/20 overflow-hidden">
+              {/* Sliding pill */}
+              <span
+                className={`absolute top-1 bottom-1 transition-all duration-300 ease-in-out bg-primary shadow-lg shadow-primary/20 ${tempUnit === 'C' ? 'rounded-l-md' : 'rounded-r-md'}`}
+                style={{
+                  left: tempUnit === 'C' ? '4px' : 'calc(50%)',
+                  width: 'calc(50% - 4px)'
+                }}
+              />
+              <button
                 onClick={() => setTempUnit('C')}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${tempUnit === 'C' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+                className={`relative z-10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors duration-300 ${tempUnit === 'C' ? 'text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
               >
                 Celsius
               </button>
-              <button 
+              <button
                 onClick={() => setTempUnit('F')}
-                className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-all ${tempUnit === 'F' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant hover:bg-surface-container-high'}`}
+                className={`relative z-10 px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded transition-colors duration-300 ${tempUnit === 'F' ? 'text-on-primary' : 'text-on-surface-variant hover:text-on-surface'}`}
               >
                 Fahrenheit
               </button>
